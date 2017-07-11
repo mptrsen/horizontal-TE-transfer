@@ -3,6 +3,10 @@
 set -e
 set -o pipefail
 
+if [[ $# -ne 1 ]]; then echo "Usage: $0 TABLE"; exit 1; fi
+
+INPUT_TABLE=$1
+
 N=$(grep -c -v '^#' doc/repeatmodeler-dirs.txt)
 
 declare -i i=0

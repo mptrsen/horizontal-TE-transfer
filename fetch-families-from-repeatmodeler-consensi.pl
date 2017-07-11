@@ -7,12 +7,61 @@ use File::Basename;
 use Data::Dumper;
 use Getopt::Long;
 
-# Reads a consensi.fa.classified file from RepeatModeler,
-# fetches the sequences from the RM output directory,
-# makes a multiple sequence alignment for each family,
-# constructs a HMM for each family for future searching.
-#
-# Parameters: path to RModeler output directory
+=head1 NAME
+
+fetch-families-from-repeatmodeler-consensi.pl -- Build profile HMMs from RepeatModeler families
+
+=head1 SYNOPSIS
+
+B<fetch-families-from-repeatmodeler-consensi.pl> [OPTIONS] [--outdir Output_dir] --rmdir RModeler_dir
+
+=head1 DESCRIPTION
+
+Reads a consensi.fa.classified file from RepeatModeler, fetches the sequences
+from the corresponding RM output directory, makes a multiple sequence alignment
+for each family, and constructs a HMM for each family for future searching.
+
+Mandatory parameter: Path to RModeler output directory
+
+=head1 OPTIONS
+
+=over
+
+=item B<--rmdir> [pathspec]
+
+Specify path to RepeatModeler output directory (usually ends in something like
+"RM_26226.TueDec230307382014"). Mandatory.
+
+=item B<--ncpu> [N]
+
+Use N CPU threads. Default: 1 thread.
+
+=item B<--outdir> [pathspec]
+
+Specify output directory. Default: current directory.
+
+=item B<--path-to-linsi> [pathspec]
+
+Specify path to B<linsi>, if not present in PATH. Default: "mafft".
+
+=item B<--path-to-hmmbuild> [pathspec]
+
+Specify path to B<hmmbuild>, if not present in PATH. Default: "hmmbuild".
+
+=back
+
+=head1 AUTHOR
+
+Malte Petersen L<<mptrsen@uni-bonn.de>>
+
+=head1 LICENSE
+
+Copyright (c) 2017 Malte Petersen. Licensed under the GNU General Public License (GPL) version 3.
+This is free software: you are free to change and redistribute it. There is NO
+WARRANTY, to the extent permitted by law.
+
+
+=cut
 
 my $usage = "Usage: $0 [--ncpu N] [--outdir Output_dir] RModeler_dir\n";
 
