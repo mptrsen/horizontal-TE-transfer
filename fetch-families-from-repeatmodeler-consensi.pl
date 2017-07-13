@@ -123,6 +123,22 @@ foreach my $header (sort { $a cmp $b } keys %$consensus_sequences) {
 
 package Family;
 
+=head1 NAME
+
+Family
+
+=head1 DESCRIPTION
+
+Handles repeat family identification from RepeatModeler consensi.fa.classified
+files. Can find the corresponding files from a repeatmodeler output directory
+by parsing the headers.
+
+Constructs MSA and HMM files from the sequences using mafft and hmmbuild,
+respectively. Can additionally add an accession number to the resulting HMM
+files.
+
+=cut
+
 use strict;
 use warnings;
 use autodie;
@@ -205,11 +221,13 @@ sub hmmfile {
 	$self->{'hmmfile'} = shift || confess;
 }
 
+# returns a string based on round and family information
 sub file_basename {
 	my $self = shift;
 	return catfile('round-' . $self->round() . '_family-' . $self->family());
 }
 
+# infers a multiple sequence alignment (MSA) using MAFFT L-INS-i and returns the path to the MSA file
 sub make_alignment {
 	my $self = shift;
 	my $outdir = shift || confess;
@@ -222,6 +240,7 @@ sub make_alignment {
 	return $self->msafile();
 }
 
+# generates a HMM profile and returns the path to it
 sub make_hmm {
 	my $self = shift @_;
 	my $outdir = shift || confess;
@@ -235,6 +254,7 @@ sub make_hmm {
 	return $self->hmmfile();
 }
 
+# constructs accession using species shorthand, round and family information
 sub accession {
 	my $self = shift;
 	return $self->{'accession'} if defined $self->{'accession'};
@@ -242,14 +262,34 @@ sub accession {
 	$self->{'accession'} = $species->shorthand() . '_r' . $self->round() . 'f' . $self->family();
 }
 
+# adds accession to the HMM file
 sub add_accession_to_hmm {
 	my $self = shift;
 	tie my @model_file, 'Tie::File', $self->hmmfile();
+	return if grep { /^ACC/ } @model_file; # in case this has been modified before
 	splice @model_file, 2, 0, 'ACC   ' . $self->accession();
 	untie @model_file;
 }
 
 package Species;
+
+=head1 NAME
+
+Species
+
+=head1 SYNOPSIS
+
+    my $species = Species->new("Homo sapiens");
+		print $species->genus, "\n";
+		print $species->species, "\n";
+		print $species->shorthand, "\n"; # 1:4 lowercase abbreviation
+
+=head1 DESCRIPTION
+
+Handles species name formatting etc.
+
+=cut
+
 use strict;
 use warnings;
 use Carp;
@@ -280,7 +320,12 @@ sub species {
 sub shorthand {
 	my $self = shift;
 	return $self->{'shorthand'} if defined $self->{'shorthand'};
-	$self->{'shorthand'} = lc substr($self->genus(), 0, 1) . lc substr($self->species(), 0, 4);
+	if ($self->species()) {
+		$self->{'shorthand'} = lc substr($self->genus(), 0, 1) . lc substr($self->species(), 0, 4);
+	}
+	else { # if there was no genus/species separator, we only have genus
+		$self->{'shorthand'} = $self->genus();
+	}
 	return $self->{'shorthand'};
 }
 
