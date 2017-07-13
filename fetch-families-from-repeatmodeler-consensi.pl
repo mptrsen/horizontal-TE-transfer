@@ -27,6 +27,12 @@ Mandatory parameter: Path to RModeler output directory
 
 =over
 
+=item B<--species> Species_name
+
+Specify species name. Genus and species can be separated by underscore or space
+(in that case, you need quotes around it). Used to construct accession.
+Mandatory.
+
 =item B<--rmdir> [pathspec]
 
 Specify path to RepeatModeler output directory (usually ends in something like
@@ -56,28 +62,33 @@ Malte Petersen L<<mptrsen@uni-bonn.de>>
 
 =head1 LICENSE
 
-Copyright (c) 2017 Malte Petersen. Licensed under the GNU General Public License (GPL) version 3.
-This is free software: you are free to change and redistribute it. There is NO
-WARRANTY, to the extent permitted by law.
+Copyright (c) 2017 Malte Petersen. Licensed under the GNU General Public
+License (GPL) version 3. This is free software: you are free to change and
+redistribute it. There is NO WARRANTY, to the extent permitted by law.
 
 
 =cut
 
-my $usage = "Usage: $0 [--ncpu N] [--outdir Output_dir] RModeler_dir\n";
+my $usage = "Usage: $0 [--ncpu N] [--outdir Output_dir] [options] --species Species_name --rmdir RModeler_dir\n";
 
 my $outdir   = '.';
 my $ncpu     = 1;
 my $rmdir    = '';
 my $linsi    = 'linsi';
 my $hmmbuild = 'hmmbuild';
+my $species  = '';
 GetOptions(
 	'outdir=s'           => \$outdir,
 	'ncpu=i'             => \$ncpu,
 	'rmdir=s'            => \$rmdir,
 	'path-to-linsi=s'    => \$linsi,
 	'path-to-hmmbuild=s' => \$hmmbuild,
+	'species=s'          => \$species,
 ) or die "Error in command line arguments\n";
-$rmdir  //= shift @ARGV or die $usage;
+$rmdir   //= shift @ARGV or die $usage;
+$species //= shift @ARGV or die $usage;
+
+$species = Species->new($species);
 
 # make sure paths exist where specified
 -d $outdir or die "Output directory '$outdir' not found\n";
@@ -97,13 +108,17 @@ my $n = scalar keys %$consensus_sequences;
 foreach my $header (sort { $a cmp $b } keys %$consensus_sequences) {
 	$i++;
 	my $family = Family->new($rmdir, $header);
+	$family->accession($species);
 	printf "Making MSA for round %d, family %d (%s) from file %s (%d of %d)\n", $family->round(), $family->family(), $family->name(), $family->file(), $i, $n;
 	$family->make_alignment( $outdir, $linsi, $ncpu );
 	printf "MSA file: %s\n", $family->msafile();
 	print "Making HMM\n";
 	$family->make_hmm( $outdir, $hmmbuild, $ncpu );
 	printf "HMM file: %s\n", $family->hmmfile();
+	$family->add_accession_to_hmm();
+	print "Added accession ", $family->accession(), "\n";
 	print "-------------------\n";
+	exit;
 }
 
 package Family;
@@ -114,6 +129,7 @@ use autodie;
 use File::Basename;
 use File::Spec::Functions;
 use Carp;
+use Tie::File;
 
 sub new {
 	my $class = shift;
@@ -189,13 +205,18 @@ sub hmmfile {
 	$self->{'hmmfile'} = shift || confess;
 }
 
+sub file_basename {
+	my $self = shift;
+	return catfile('round-' . $self->round() . '_family-' . $self->family());
+}
+
 sub make_alignment {
 	my $self = shift;
 	my $outdir = shift || confess;
 	my $linsi = shift || confess;
 	my $ncpu = shift || confess;
 	my $inf = $self->file();
-	my $outf = catfile($outdir, basename($inf, '.fa') . '.afa');
+	my $outf = catfile($outdir, $self->file_basename() . '.afa');
 	system("$linsi --thread $ncpu '$inf' > '$outf' 2> /dev/null") and confess "Fatal: mafft failed: $!";
 	$self->msafile($outf);
 	return $self->msafile();
@@ -208,12 +229,60 @@ sub make_hmm {
 	my $ncpu = shift || confess;
 	my $inf = $self->msafile();
 	my $name = $self->header();
-	my $outf = catfile($outdir, basename($inf) . '.hmm');
+	my $outf = catfile($outdir, $self->file_basename() . '.hmm');
 	system("$hmmbuild --cpu $ncpu -n '$name' --informat afa '$outf' '$inf' 2> /dev/null") and confess "Fatal: hmmbuild failed: $!";
 	$self->hmmfile($outf);
 	return $self->hmmfile();
 }
 
+sub accession {
+	my $self = shift;
+	return $self->{'accession'} if defined $self->{'accession'};
+	my $species = shift || confess;
+	$self->{'accession'} = $species->shorthand() . '_r' . $self->round() . 'f' . $self->family();
+}
+
+sub add_accession_to_hmm {
+	my $self = shift;
+	tie my @model_file, 'Tie::File', $self->hmmfile();
+	splice @model_file, 2, 0, 'ACC   ' . $self->accession();
+	untie @model_file;
+}
+
+package Species;
+use strict;
+use warnings;
+use Carp;
+
+sub new {
+	my $class = shift;
+	my $species_string = shift;
+	my ($genus, $species) = split / |_/, $species_string;
+	my $self = {
+		'species' => $species,
+		'genus'   => $genus,
+	};
+	return bless $self, $class;
+}
+
+sub genus {
+	my $self = shift;
+	return $self->{'genus'} if defined $self->{'genus'};
+	$self->{'genus'} = shift || confess;
+}
+
+sub species {
+	my $self = shift;
+	return $self->{'species'} if defined $self->{'species'};
+	$self->{'species'} = shift || confess;
+}
+
+sub shorthand {
+	my $self = shift;
+	return $self->{'shorthand'} if defined $self->{'shorthand'};
+	$self->{'shorthand'} = lc substr($self->genus(), 0, 1) . lc substr($self->species(), 0, 4);
+	return $self->{'shorthand'};
+}
 
 package Seqload::Fasta;
 use strict;
