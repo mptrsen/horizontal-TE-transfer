@@ -118,7 +118,6 @@ foreach my $header (sort { $a cmp $b } keys %$consensus_sequences) {
 	$family->add_accession_to_hmm();
 	print "Added accession ", $family->accession(), "\n";
 	print "-------------------\n";
-	exit;
 }
 
 package Family;
