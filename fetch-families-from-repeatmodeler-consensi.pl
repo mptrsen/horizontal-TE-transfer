@@ -54,6 +54,9 @@ Specify path to B<linsi>, if not present in PATH. Default: "mafft".
 
 Specify path to B<hmmbuild>, if not present in PATH. Default: "hmmbuild".
 
+=item B<--accession-prefix> [prefix]
+
+Specify prefix to be used in HMM accession strings. Default: unset (no prefix, just 'rNfY')
 =back
 
 =head1 AUTHOR
@@ -71,12 +74,13 @@ redistribute it. There is NO WARRANTY, to the extent permitted by law.
 
 my $usage = "Usage: $0 [--ncpu N] [--outdir Output_dir] [options] --species Species_name --rmdir RModeler_dir\n";
 
-my $outdir   = '.';
-my $ncpu     = 1;
-my $rmdir    = '';
-my $linsi    = 'linsi';
-my $hmmbuild = 'hmmbuild';
-my $species  = '';
+my $outdir           = '.';
+my $ncpu             = 1;
+my $rmdir            = '';
+my $linsi            = 'linsi';
+my $hmmbuild         = 'hmmbuild';
+my $species          = '';
+my $accession_prefix = undef;
 GetOptions(
 	'outdir=s'           => \$outdir,
 	'ncpu=i'             => \$ncpu,
@@ -84,6 +88,7 @@ GetOptions(
 	'path-to-linsi=s'    => \$linsi,
 	'path-to-hmmbuild=s' => \$hmmbuild,
 	'species=s'          => \$species,
+	'accession-prefix=s' => \$accession_prefix,
 ) or die "Error in command line arguments\n";
 $rmdir   //= shift @ARGV or die $usage;
 $species //= shift @ARGV or die $usage;
@@ -108,8 +113,15 @@ my $n = scalar keys %$consensus_sequences;
 foreach my $header (sort { $a cmp $b } keys %$consensus_sequences) {
 	$i++;
 	my $family = Family->new($rmdir, $header);
-	$family->accession($species);
-	printf "Making MSA for round %d, family %d (%s) from file %s (%d of %d)\n", $family->round(), $family->family(), $family->name(), $family->file(), $i, $n;
+	$family->accession( prefix => $accession_prefix );
+	printf "Making MSA for round %d, family %d (%s) from file %s (%d of %d)\n",
+		$family->round(),
+		$family->family(),
+		$family->name(),
+		$family->file(),
+		$i,
+		$n,
+	;
 	$family->make_alignment( $outdir, $linsi, $ncpu );
 	printf "MSA file: %s\n", $family->msafile();
 	print "Making HMM\n";
@@ -256,9 +268,10 @@ sub make_hmm {
 # constructs accession using species shorthand, round and family information
 sub accession {
 	my $self = shift;
+	my $opts = shift;
 	return $self->{'accession'} if defined $self->{'accession'};
-	my $species = shift || confess;
-	$self->{'accession'} = $species->shorthand() . '_r' . $self->round() . 'f' . $self->family();
+	my $prefix = $opts->{'prefix'};
+	$self->{'accession'} = defined $prefix ? $prefix . '_r' : 'r' . $self->round() . 'f' . $self->family();
 }
 
 # adds accession to the HMM file
@@ -314,6 +327,11 @@ sub species {
 	my $self = shift;
 	return $self->{'species'} if defined $self->{'species'};
 	$self->{'species'} = shift || confess;
+}
+
+sub full_name {
+	my $self = shift;
+	return $self->genus() . '_' . $self->species();
 }
 
 sub shorthand {
