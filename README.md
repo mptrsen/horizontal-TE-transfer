@@ -19,3 +19,16 @@ in the input table. The input table must have two whitespace-separated columns
 
 Entries starting with a `#` are commented out, i.e., will be skipped. The
 script proceeds to create the output directory and takes care of everything.
+
+### make-hmms-and-search-everything.sh
+
+Sources the two files `rm2hmm.sh` and `hmmsearch-all-genomes.sh` to form a
+full-fledged analysis pipeline: It uses the above-mentioned Perl script
+`fetch-families-from-repeatmodeler-consensi` to construct HMMs for the TE
+families, concatenates them into one big HMM database and then proceeds to
+search all genome assemblies with that database.
+
+Dependencies:
+
+* `rm2hmm.sh`
+* `hmmsearch-all-genomes.sh`
