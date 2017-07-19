@@ -32,3 +32,4 @@ Dependencies:
 
 * `rm2hmm.sh`
 * `hmmsearch-all-genomes.sh`
+* `fetch-families-from-repeatmodeler-consensi.pl`
