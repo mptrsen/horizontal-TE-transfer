@@ -9,16 +9,15 @@
 set -e
 set -o pipefail
 
-# parameter expansion: ${param:=word} assigns a default value if parameter is
-# unset or null. 
-
-SPECIES="${SPECIES:=SPECIES_NAME}" # this really really needs input
-RMDIR="${RMDIR:=INPUTDIR}"      # this really really needs input
-PREFIX="${PREFIX:=/share/pool/malte/analyses}"
+# these variables must be set; everything else is derived from them
+SPECIES="SPECIES_NAME" # this really really needs input
+RMDIR="INPUTDIR"       # this really really needs input
+PREFIX="/share/pool/malte/analyses" # set this too
 
 # for the functions 'die' and 'run'
 source ~/.bash_functions
 
+# test if parameters are really set (not left at default)
 if [[ "$SPECIES" == "SPECIES_NAME" ]]; then 
 	die "Input error: SPECIES not supplied (is still '$SPECIES', you need to change this)"
 fi
@@ -32,7 +31,7 @@ HMMBUILD="${HMMBUILD:=/share/scientific_bin/hmmer/3.1b2/bin/hmmbuild}"
 HMMSEARCH="${HMMSEARCH:=/share/scientific_bin/hmmer/3.1b2/bin/hmmsearch}"
 DATABASE="${DATABASE:=$PREFIX/results/hmms/$SPECIES.hmm}"
 OUTDIR="${OUTDIR:=$PREFIX/results/hmmsearch/$SPECIES}"
-NCPU=$NSLOTS # takes number of CPUs from SGE variable
+NCPU=${NSLOTS:=1} # takes number of CPUs from SGE variable or defaults to 1
 MAKE_HMMS=1
 SEARCH_ALL=1
 DRY_RUN=1
