@@ -57,6 +57,7 @@ Specify path to B<hmmbuild>, if not present in PATH. Default: "hmmbuild".
 =item B<--accession-prefix> [prefix]
 
 Specify prefix to be used in HMM accession strings. Default: unset (no prefix, just 'rNfY')
+
 =back
 
 =head1 AUTHOR
@@ -113,7 +114,7 @@ my $n = scalar keys %$consensus_sequences;
 foreach my $header (sort { $a cmp $b } keys %$consensus_sequences) {
 	$i++;
 	my $family = Family->new($rmdir, $header);
-	$family->accession( prefix => $accession_prefix );
+	$family->accession( { prefix => $accession_prefix } );
 	printf "Making MSA for round %d, family %d (%s) from file %s (%d of %d)\n",
 		$family->round(),
 		$family->family(),
@@ -271,7 +272,12 @@ sub accession {
 	my $opts = shift;
 	return $self->{'accession'} if defined $self->{'accession'};
 	my $prefix = $opts->{'prefix'};
-	$self->{'accession'} = defined $prefix ? $prefix . '_r' : 'r' . $self->round() . 'f' . $self->family();
+	if (defined $prefix) {
+		$self->{'accession'} = $prefix . '_r' . $self->round() . 'f' . $self->family();
+	}
+	else {
+		$self->{'accession'} = 'r' . $self->round() . 'f' . $self->family();
+	}
 }
 
 # adds accession to the HMM file

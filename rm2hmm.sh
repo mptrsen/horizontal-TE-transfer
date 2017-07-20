@@ -30,8 +30,8 @@ LINSI="${LINSI:=/share/scientific_bin/mafft/7.309we/bin/linsi}"
 HMMBUILD="${HMMBUILD:=/share/scientific_bin/hmmer/3.1b2/bin/hmmbuild}"
 HMMSEARCH="${HMMSEARCH:=/share/scientific_bin/hmmer/3.1b2/bin/hmmsearch}"
 PREFIX="${PREFIX:=/share/pool/malte/analyses}"
-DATABASE="${DATABASE:=PREFIX/results/hmms/$SPECIES.hmm}"
-OUTDIR="${OUTDIR:=PREFIX/results/hmmsearch/$SPECIES}"
+DATABASE="${DATABASE:=$PREFIX/results/hmms/$SPECIES.hmm}"
+OUTDIR="${OUTDIR:=$PREFIX/results/hmmsearch/$SPECIES}"
 NCPU=$NSLOTS # takes number of CPUs from SGE variable
 
 cd $PREFIX
