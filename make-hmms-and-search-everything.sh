@@ -17,14 +17,6 @@ PREFIX="/share/pool/malte/analyses" # set this too
 # for the functions 'die' and 'run'
 source ~/.bash_functions
 
-# test if parameters are really set (not left at default)
-if [[ "$SPECIES" == "SPECIES_NAME" ]]; then 
-	die "Input error: SPECIES not supplied (is still '$SPECIES', you need to change this)"
-fi
-if [[ "$RMDIR" == "INPUTDIR" ]]; then
-	die "Input error: RMDIR not supplied (is still '$RMDIR', you need to change this)"
-fi
-
 PERL="${PERL:=/opt/perl/bin/perl}"
 LINSI="${LINSI:=/share/scientific_bin/mafft/7.309we/bin/linsi}"
 HMMBUILD="${HMMBUILD:=/share/scientific_bin/hmmer/3.1b2/bin/hmmbuild}"
